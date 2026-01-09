@@ -2,7 +2,13 @@ package moe.karla.asm.runtime.dumper;
 
 import lombok.var;
 import org.objectweb.asm.*;
+import org.objectweb.asm.signature.SignatureReader;
+import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.util.Printer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DummyClassPrinter extends Printer {
     public DummyClassPrinter() {
@@ -40,17 +46,81 @@ public class DummyClassPrinter extends Printer {
         }
 
         text.add(this.simpledName = name.substring(name.lastIndexOf('/') + 1));
-        text.add(" extends ");
-        text.add(superName.replace('/', '.'));
-        if (interfaces != null && interfaces.length > 0) {
-            text.add(" implements ");
-            for (int i = 0; i < interfaces.length; i++) {
-                if (i != 0) text.add(", ");
-                text.add(interfaces[i].replace('/', '.'));
+
+        if (signature != null) {
+            new SignatureReader(signature).accept(new SignatureVisitor(Opcodes.ASM9) {
+                boolean hasFormal, hasInterface;
+                final SingleSignatureVisitor render = new SingleSignatureVisitor();
+                final SingleSignatureVisitor extendsRender = new SingleSignatureVisitor();
+
+                private void flushFormal() {
+                    var type = render.renderAndReset();
+                    if (!type.isEmpty()) {
+                        text.add(" extends ");
+                        text.add(type);
+                    }
+                }
+
+                @Override
+                public void visitFormalTypeParameter(String name) {
+                    flushFormal();
+
+                    text.add(hasFormal ? "," : "<");
+                    text.add(name);
+                    hasFormal = true;
+                }
+
+                @Override
+                public SignatureVisitor visitInterfaceBound() {
+                    return render;
+                }
+
+                @Override
+                public SignatureVisitor visitClassBound() {
+                    return render;
+                }
+
+                @Override
+                public SignatureVisitor visitInterface() {
+                    if (hasInterface) {
+                        text.add(", ");
+                    } else {
+                        text.add(" implements ");
+                    }
+                    var render = new SingleSignatureVisitor();
+                    text.add(render);
+                    return render;
+                }
+
+                @Override
+                public SignatureVisitor visitSuperclass() {
+                    flushFormal();
+                    if (hasFormal) {
+                        text.add(">");
+                    }
+                    text.add(" extends ");
+                    text.add(extendsRender);
+                    return extendsRender;
+                }
+
+            });
+        } else {
+            text.add(" extends ");
+            text.add(superName.replace('/', '.'));
+            if (interfaces != null && interfaces.length > 0) {
+                text.add(" implements ");
+                for (int i = 0; i < interfaces.length; i++) {
+                    if (i != 0) text.add(", ");
+                    text.add(interfaces[i].replace('/', '.'));
+                }
             }
         }
 
         text.add(" {\n");
+    }
+
+    @Override
+    public void visitParameter(String name, int access) {
     }
 
     @Override
@@ -118,12 +188,12 @@ public class DummyClassPrinter extends Printer {
     }
 
     @Override
-    public Printer visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+    public Printer visitMethod(int access, String methodName, String descriptor, String signature, String[] exceptions) {
 
         if ((access & Opcodes.ACC_SYNTHETIC) != 0) {
             return new DummyClassPrinter();
         }
-        if ("<clinit>".equals(name)) {
+        if ("<clinit>".equals(methodName)) {
             return new DummyClassPrinter();
         }
 
@@ -146,30 +216,126 @@ public class DummyClassPrinter extends Printer {
         if ((access & Opcodes.ACC_NATIVE) != 0) {
             text.add("native ");
         }
-
-        if (name.equals("<init>")) {
-            text.add(this.simpledName);
-        } else {
-            if ((access & Opcodes.ACC_FINAL) != 0) {
-                text.add("final ");
-            }
-
-            text.add(Type.getReturnType(descriptor).getClassName());
-            text.add(" ");
-            text.add(name);
+        if ((access & Opcodes.ACC_FINAL) != 0) {
+            text.add("final ");
         }
-        text.add("(");
 
-        var c = 0;
+
+        var returnType = new AtomicReference<>(Type.getReturnType(descriptor).getClassName());
+        var argumentTypes = new ArrayList<String>();
         for (var arg : Type.getArgumentTypes(descriptor)) {
-            if (c != 0) {
-                text.add(", ");
-            }
-            text.add(arg.getClassName());
-            text.add(" ");
-            text.add("arg" + (c++));
+            argumentTypes.add(arg.getClassName());
         }
-        text.add(")");
+
+        if (signature != null) {
+            new SignatureReader(signature).accept(new SignatureVisitor(Opcodes.ASM9) {
+                boolean hasFormal;
+                final SingleSignatureVisitor render = new SingleSignatureVisitor();
+                int argCount;
+
+                final List<Object> metNameRender = new ArrayList<>();
+
+
+                private void flushFormal() {
+                    var type = render.renderAndReset();
+                    if (!type.isEmpty()) {
+                        text.add(" extends ");
+                        text.add(type);
+                    }
+                }
+
+                @Override
+                public void visitFormalTypeParameter(String name) {
+                    if (!hasFormal) {
+                        text.add("<");
+                        text.add(name);
+                    } else {
+                        flushFormal();
+                        text.add(",");
+                        text.add(name);
+                    }
+                    hasFormal = true;
+                }
+
+                @Override
+                public SignatureVisitor visitClassBound() {
+                    return render;
+                }
+
+                @Override
+                public SignatureVisitor visitInterfaceBound() {
+                    return render;
+                }
+
+                private void endFormal() {
+                    if (hasFormal) {
+                        flushFormal();
+                        text.add(">");
+                        hasFormal = false;
+                    }
+                }
+
+                @Override
+                public SignatureVisitor visitParameterType() {
+                    endFormal();
+
+                    if (argCount == 0) {
+                        text.add(metNameRender);
+                        text.add("(");
+                    } else {
+                        text.add(render.renderAndReset());
+                        text.add(" arg" + argCount);
+                        text.add(", ");
+                    }
+                    argCount++;
+                    return render;
+                }
+
+                @Override
+                public SignatureVisitor visitReturnType() {
+                    endFormal();
+                    if (argCount == 0) {
+                        text.add(metNameRender);
+                        text.add("()");
+                    } else {
+                        text.add(render.renderAndReset());
+                        text.add(" arg" + argCount);
+                        text.add(")");
+                    }
+
+                    if (methodName.equals("<init>")) {
+                        metNameRender.add(simpledName);
+                    } else {
+                        metNameRender.add(render);
+                        metNameRender.add(" ");
+                        metNameRender.add(methodName);
+                    }
+
+                    return render;
+                }
+            });
+
+        } else {
+            if (methodName.equals("<init>")) {
+                text.add(this.simpledName);
+            } else {
+                text.add(returnType);
+                text.add(" ");
+                text.add(methodName);
+            }
+            text.add("(");
+
+            var c = 0;
+            for (var arg : Type.getArgumentTypes(descriptor)) {
+                if (c != 0) {
+                    text.add(", ");
+                }
+                text.add(argumentTypes.get(c));
+                text.add(" ");
+                text.add("arg" + (c++));
+            }
+            text.add(")");
+        }
 
         if ((access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) == 0) {
             text.add("{ throw new AbstractMethodError(\"This is a generated class and not compiled from a source file.\"); }");
