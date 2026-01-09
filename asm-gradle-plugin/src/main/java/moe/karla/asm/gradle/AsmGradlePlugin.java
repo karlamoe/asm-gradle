@@ -119,6 +119,11 @@ public class AsmGradlePlugin implements Plugin<Project> {
             sourceSets.named("main").configure(main -> {
                 main.getJava().srcDir(extension.getGeneratedClassSourceDirectory());
             });
+            sourceSets.register("asmOutput", src -> {
+                src.getJava().setSrcDirs(new ArrayList<>());
+                src.getResources().setSrcDirs(new ArrayList<>());
+                src.getJava().getDestinationDirectory().set(extension.getGeneratedClassOutputDirectory());
+            });
         }
 
         sourceSets.named("main").configure(main -> {
