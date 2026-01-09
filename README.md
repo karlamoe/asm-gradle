@@ -1,5 +1,8 @@
 # asm-gradle
 
+[![maven-central](https://img.shields.io/maven-central/v/moe.karla.asm/moe.karla.asm.gradle.plugin?label=moe.karla.asm)](https://central.sonatype.com/artifact/moe.karla.asm/moe.karla.asm.gradle.plugin)
+
+
 Here is a Gradle plugin designed for generating classes that is hard to written in classic java.
 
 This plugin will create a source set with name `asm`. You can write your classes generators at
