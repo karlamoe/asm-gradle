@@ -60,7 +60,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
             });
 
             project.getTasks().named(asm.getCompileTaskName("java"), JavaCompile.class).configure(task -> {
-                task.getJavaCompiler().convention(extension.getJavaToolchain()
+                task.getJavaCompiler().set(extension.getJavaToolchain()
                         .flatMap(javaToolchainSpec -> project.getExtensions().getByType(JavaToolchainService.class)
                                 .compilerFor(javaToolchainSpec)
                         )
@@ -105,7 +105,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
 
             task.getMainClass().set("moe.karla.asm.launcher.TransformerLauncher");
 
-            task.getJavaLauncher().convention(extension.getJavaToolchain()
+            task.getJavaLauncher().set(extension.getJavaToolchain()
                     .flatMap(javaToolchainSpec -> project.getExtensions().getByType(JavaToolchainService.class)
                             .launcherFor(javaToolchainSpec)
                     )
