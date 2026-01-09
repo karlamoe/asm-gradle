@@ -14,6 +14,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -114,6 +115,9 @@ public class TransformerLauncher extends GeneratorContext {
     private void runGenerator(String className) throws Throwable {
         Class<?> targetClass = Class.forName(className.replace('/', '.'));
         if (!ClassGenerator.class.isAssignableFrom(targetClass)) {
+            return;
+        }
+        if (Modifier.isAbstract(targetClass.getModifiers())) {
             return;
         }
 
