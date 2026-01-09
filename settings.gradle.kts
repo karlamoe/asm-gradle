@@ -8,6 +8,10 @@ fun subbuild(path: String) {
 subbuild("asm-gradle-plugin")
 subbuild("asm-runtime")
 
+if (rootDir.resolve("local-verifier").isDirectory) {
+    subbuild("local-verifier")
+}
+
 
 builds.forEach { build ->
     rootDir.resolve("gradle.properties").copyTo(

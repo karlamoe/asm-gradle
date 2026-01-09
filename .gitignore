@@ -7,6 +7,8 @@ build/
 
 **/gradle.properties
 
+local-verifier
+
 
 ### IntelliJ IDEA ###
 .idea/
