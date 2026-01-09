@@ -8,6 +8,8 @@ lombok = 'org.projectlombok:lombok:1.18.42'
 
 asm = { group = 'org.ow2.asm', name = 'asm', version.ref = 'asm' }
 asm-util = { group = 'org.ow2.asm', name = 'asm-util', version.ref = 'asm' }
+asm-commons = { group = 'org.ow2.asm', name = 'asm-commons', version.ref = 'asm' }
+asm-tree = { group = 'org.ow2.asm', name = 'asm-tree', version.ref = 'asm' }
 
 [plugins]
 maven-publish = { id = 'moe.karla.maven-publishing', version.ref = 'maven-publish' }

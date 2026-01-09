@@ -49,7 +49,7 @@ The following are the reminders for generators:
 - Generators must extends `moe.karla.asm.generator.ClassGenerator`
 - All classes will be loaded by `Class#forName(String)`
 - Only classes from `src/asm` will be scanned. Classes from libraries will be ignored.
-- At least Java 11 is required for running generators.         
+- At least Java 8 is required for running generators.         
 
 # Applying
 

@@ -1,5 +1,6 @@
 package moe.karla.asm.runtime.dumper;
 
+import lombok.var;
 import org.objectweb.asm.*;
 import org.objectweb.asm.util.Printer;
 

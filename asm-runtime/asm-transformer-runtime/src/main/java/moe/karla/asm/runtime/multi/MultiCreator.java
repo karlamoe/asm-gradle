@@ -1,5 +1,7 @@
 package moe.karla.asm.runtime.multi;
 
+import lombok.var;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;

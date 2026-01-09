@@ -1,5 +1,7 @@
 package moe.karla.asm.launcher;
 
+import lombok.val;
+import lombok.var;
 import moe.karla.asm.function.ThrowingConsumer;
 import moe.karla.asm.function.ThrowingRunnable;
 import moe.karla.asm.generator.ClassGenerator;
@@ -15,10 +17,12 @@ import org.objectweb.asm.util.TraceClassVisitor;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -50,9 +54,9 @@ public class TransformerLauncher extends GeneratorContext {
     }
 
     public static void main(String[] args00) throws Throwable {
-        var args = new ArrayList<>(List.of(args00));
-        var outputSource = Path.of(args.remove(0));
-        var outputClasses = Path.of(args.remove(0));
+        var args = new ArrayList<>(Arrays.asList(args00));
+        var outputSource = Paths.get(args.remove(0));
+        var outputClasses = Paths.get(args.remove(0));
 
 //        System.out.println("outputSource: " + outputSource);
 //        System.out.println("outputClasses: " + outputClasses);
@@ -65,7 +69,7 @@ public class TransformerLauncher extends GeneratorContext {
 
 
         for (var file : args) {
-            var reader = new ClassReader(Files.readAllBytes(Path.of(file)));
+            var reader = new ClassReader(Files.readAllBytes(Paths.get(file)));
 
             launcher.executeThrowing(() -> {
                 launcher.runGenerator(reader.getClassName());
@@ -138,8 +142,8 @@ public class TransformerLauncher extends GeneratorContext {
             throw new IllegalStateException("Illegal class name " + cv.name);
         }
 
-        var outputClass = outputClasses.resolve(cv.name + ".class");
-        var outputSource = outputSources.resolve(cv.name + ".java");
+        val outputClass = outputClasses.resolve(cv.name + ".class");
+        val outputSource = outputSources.resolve(cv.name + ".java");
 
         Files.createDirectories(outputClass.getParent());
         Files.createDirectories(outputSource.getParent());
@@ -154,7 +158,7 @@ public class TransformerLauncher extends GeneratorContext {
                 new DummyClassPrinter(),
                 new PrintWriter(sw)
         ), 0);
-        Files.writeString(outputSource, sw.toString());
+        Files.write(outputSource, sw.toString().getBytes(StandardCharsets.UTF_8));
     }
 
 

@@ -5,6 +5,9 @@ plugins {
 }
 
 dependencies {
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+
     api(project(":asm-transformer-api"))
     api(libs.asm.util)
 }

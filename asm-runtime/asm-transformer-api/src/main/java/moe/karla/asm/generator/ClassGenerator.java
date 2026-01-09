@@ -1,5 +1,6 @@
 package moe.karla.asm.generator;
 
+import lombok.val;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -9,7 +10,7 @@ public abstract class ClassGenerator {
 
     /// Util functions
     public static void generateConstructor(ClassVisitor cv, boolean isPrivate, String superClass) {
-        var mv = cv.visitMethod(
+        val mv = cv.visitMethod(
                 isPrivate ? Opcodes.ACC_PRIVATE : Opcodes.ACC_PUBLIC,
                 "<init>",
                 "()V",
