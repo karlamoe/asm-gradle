@@ -24,6 +24,8 @@ public abstract class RunGeneratorTask extends JavaExec {
     protected abstract FileOperations getFileOperations();
 
     public RunGeneratorTask() {
+        setGroup("asm");
+
         getArgumentProviders().add(() -> {
             var result = new ArrayList<String>();
             result.add(getGeneratedClassSourceDirectory().get().getAsFile().getAbsolutePath());

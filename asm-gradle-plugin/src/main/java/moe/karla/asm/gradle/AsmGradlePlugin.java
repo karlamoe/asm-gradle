@@ -5,9 +5,12 @@ import moe.karla.asm.gradle.tasks.RunGeneratorTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.attributes.Usage;
+import org.gradle.api.attributes.java.TargetJvmVersion;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 
 import java.util.ArrayList;
 
@@ -23,9 +26,8 @@ public class AsmGradlePlugin implements Plugin<Project> {
         );
 
 
-        target.getPluginManager().withPlugin("java", $ -> {
-            setupWithJava(target, ext);
-        });
+        target.getPluginManager().apply("java");
+        setupWithJava(target, ext);
     }
 
     private boolean isInSync(Project project) {
@@ -48,12 +50,24 @@ public class AsmGradlePlugin implements Plugin<Project> {
 
 
         var srcAsm = sourceSets.register("asm", asm -> {
+            // TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE
+
             asm.getResources().setSrcDirs(new ArrayList<>());
             project.getConfigurations().named(asm.getCompileClasspathConfigurationName()).configure(cc -> {
+                cc.getAttributes().attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, Integer.MAX_VALUE);
                 cc.extendsFrom(asmDependencies.get());
+            });
+
+            project.getTasks().named(asm.getCompileTaskName("java"), JavaCompile.class).configure(task -> {
+                task.getJavaCompiler().convention(extension.getJavaToolchain()
+                        .flatMap(javaToolchainSpec -> project.getExtensions().getByType(JavaToolchainService.class)
+                                .compilerFor(javaToolchainSpec)
+                        )
+                );
             });
         });
 
+        // java.disableAutoTargetJvm();
 
         var asmRuntime = project.getConfigurations().register("asmRuntime", conf -> {
             conf.setCanBeConsumed(false);
@@ -61,6 +75,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
                     Usage.USAGE_ATTRIBUTE,
                     project.getObjects().named(Usage.class, Usage.JAVA_RUNTIME)
             );
+            conf.getAttributes().attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, Integer.MAX_VALUE);
 
             conf.extendsFrom(asmDependencies.get());
 
@@ -73,8 +88,8 @@ public class AsmGradlePlugin implements Plugin<Project> {
         });
 
 
-        var runTransformer = project.getTasks().register("runTransformer", RunGeneratorTask.class);
-        runTransformer.configure(task -> {
+        var runAsmGenerator = project.getTasks().register("runAsmGenerator", RunGeneratorTask.class);
+        runAsmGenerator.configure(task -> {
             task.getGeneratedClassOutputDirectory().set(extension.getGeneratedClassOutputDirectory());
             task.getGeneratedClassSourceDirectory().set(extension.getGeneratedClassSourceDirectory());
             var classpath = project.getObjects().fileCollection();
@@ -89,6 +104,12 @@ public class AsmGradlePlugin implements Plugin<Project> {
 
             task.getMainClass().set("moe.karla.asm.transformer.launcher.TransformerLauncher");
 
+            task.getJavaLauncher().convention(extension.getJavaToolchain()
+                    .flatMap(javaToolchainSpec -> project.getExtensions().getByType(JavaToolchainService.class)
+                            .launcherFor(javaToolchainSpec)
+                    )
+            );
+
             task.setup();
         });
 
@@ -100,11 +121,11 @@ public class AsmGradlePlugin implements Plugin<Project> {
         }
 
         sourceSets.named("main").configure(main -> {
-            main.compiledBy(runTransformer);
+            main.compiledBy(runAsmGenerator);
             var extraClasspath = project.getObjects().fileCollection();
 
-            extraClasspath.from(runTransformer.map(RunGeneratorTask::getGeneratedClassOutputDirectory));
-            extraClasspath.builtBy(runTransformer);
+            extraClasspath.from(runAsmGenerator.map(RunGeneratorTask::getGeneratedClassOutputDirectory));
+            extraClasspath.builtBy(runAsmGenerator);
 
             main.getOutput().dir(extraClasspath);
 
