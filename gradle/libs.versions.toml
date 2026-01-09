@@ -4,3 +4,4 @@ asm = '9.9.1'
 [libraries]
 
 asm = { group = 'org.ow2.asm', name = 'asm', version.ref = 'asm' }
+asm-util = { group = 'org.ow2.asm', name = 'asm-util', version.ref = 'asm' }

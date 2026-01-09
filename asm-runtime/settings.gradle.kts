@@ -7,4 +7,5 @@ plugins {
 
 include("asm-transformer-api")
 include("asm-transformer-runtime")
+include("asm-transformer-launcher")
 

@@ -1,4 +1,4 @@
-package moe.karla.asm.multi;
+package moe.karla.asm.runtime.multi;
 
 import moe.karla.asm.runtime.multi.*;
 import org.junit.jupiter.api.Test;
