@@ -103,7 +103,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
                     srcAsm.map(SourceSet::getOutput)
             );
 
-            task.getMainClass().set("moe.karla.asm.transformer.launcher.TransformerLauncher");
+            task.getMainClass().set("moe.karla.asm.launcher.TransformerLauncher");
 
             task.getJavaLauncher().convention(extension.getJavaToolchain()
                     .flatMap(javaToolchainSpec -> project.getExtensions().getByType(JavaToolchainService.class)

@@ -1,4 +1,4 @@
-package moe.karla.asm.transformer.launcher;
+package moe.karla.asm.launcher;
 
 import moe.karla.asm.generator.ClassGenerator;
 import moe.karla.asm.runtime.dumper.DummyClassPrinter;
