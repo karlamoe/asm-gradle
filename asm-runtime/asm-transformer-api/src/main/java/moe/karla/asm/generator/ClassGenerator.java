@@ -4,7 +4,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
 public abstract class ClassGenerator {
-    public abstract void generate(ClassVisitor cv) throws Throwable;
+    public abstract void generate(GeneratorContext context) throws Throwable;
 
 
     /// Util functions

@@ -1,9 +1,13 @@
 package moe.karla.asm.launcher;
 
+import moe.karla.asm.function.ThrowingConsumer;
+import moe.karla.asm.function.ThrowingRunnable;
 import moe.karla.asm.generator.ClassGenerator;
+import moe.karla.asm.generator.GeneratorContext;
 import moe.karla.asm.runtime.dumper.DummyClassPrinter;
 import moe.karla.asm.runtime.util.ClassInfoVisitor;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
@@ -14,43 +18,117 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class TransformerLauncher {
+public class TransformerLauncher extends GeneratorContext {
+    private final Path outputSources;
+    private final Path outputClasses;
+    private final ExecutorService executorService;
+    private final AtomicLong taskCounter = new AtomicLong();
+
+    public TransformerLauncher(Path outputSources, Path outputClasses) {
+        this.outputSources = outputSources;
+        this.outputClasses = outputClasses;
+        this.executorService = Executors.newScheduledThreadPool(
+                4,
+                new ThreadFactory() {
+                    private final AtomicInteger count = new AtomicInteger(0);
+
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = new Thread(r, "Transform Worker #" + count.getAndIncrement());
+                        t.setDaemon(false);
+                        return t;
+                    }
+                }
+        );
+    }
+
     public static void main(String[] args00) throws Throwable {
         var args = new ArrayList<>(List.of(args00));
         var outputSource = Path.of(args.remove(0));
         var outputClasses = Path.of(args.remove(0));
 
-        System.out.println("outputSource: " + outputSource);
-        System.out.println("outputClasses: " + outputClasses);
+//        System.out.println("outputSource: " + outputSource);
+//        System.out.println("outputClasses: " + outputClasses);
 
 
         Files.createDirectories(outputClasses);
         Files.createDirectories(outputSource);
 
+        var launcher = new TransformerLauncher(outputSource, outputClasses);
+
 
         for (var file : args) {
-            var reader = new ClassReader(
-                    Files.readAllBytes(Path.of(file))
-            );
-            System.out.println("Running " + reader.getClassName());
-            runGenerator(reader.getClassName(), outputClasses, outputSource);
+            var reader = new ClassReader(Files.readAllBytes(Path.of(file)));
+
+            launcher.executeThrowing(() -> {
+                launcher.runGenerator(reader.getClassName());
+            });
+        }
+        launcher.runKiller();
+    }
+
+    private void runKiller() {
+        if (taskCounter.compareAndSet(0, -1)) {
+            Runtime.getRuntime().halt(0);
         }
     }
 
-    private static void runGenerator(String className, Path outputClasses, Path outputSources) throws Throwable {
+    @Override
+    public void execute(Runnable command) {
+        executeThrowing(command, command::run);
+    }
+
+    @Override
+    public void executeThrowing(ThrowingRunnable command) {
+        executeThrowing(command, command);
+    }
+
+    @Override
+    public void executeThrowing(Object context, ThrowingRunnable command) {
+        taskCounter.getAndIncrement();
+        executorService.execute(() -> {
+            try {
+                command.run();
+            } catch (Throwable throwable) {
+                try {
+                    System.err.println("Exception while executing with " + context);
+                } catch (Throwable ignored) {
+                }
+                try {
+                    throwable.printStackTrace(System.err);
+                } catch (Throwable ignored) {
+                }
+                Runtime.getRuntime().halt(3553);
+            }
+            taskCounter.getAndDecrement();
+            runKiller();
+        });
+    }
+
+    private void runGenerator(String className) throws Throwable {
         Class<?> targetClass = Class.forName(className.replace('/', '.'));
         if (!ClassGenerator.class.isAssignableFrom(targetClass)) {
             return;
         }
 
         ClassGenerator generator = (ClassGenerator) targetClass.newInstance();
+        generator.generate(this);
+    }
+
+    @Override
+    public void addClass(ThrowingConsumer<ClassVisitor> consumer) throws Throwable {
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         StringWriter sw = new StringWriter();
         ClassInfoVisitor cv = new ClassInfoVisitor(Opcodes.ASM9, writer);
 
-        generator.generate(cv);
+        consumer.accept(cv);
 
         if (cv.name.contains(".")) {
             throw new IllegalStateException("Illegal class name " + cv.name);
@@ -73,6 +151,16 @@ public class TransformerLauncher {
                 new PrintWriter(sw)
         ), 0);
         Files.writeString(outputSource, sw.toString());
+    }
 
+
+    @Override
+    public Path getGeneratedClassesDir() {
+        return outputClasses;
+    }
+
+    @Override
+    public Path getGeneratedSourcesDir() {
+        return outputSources;
     }
 }
