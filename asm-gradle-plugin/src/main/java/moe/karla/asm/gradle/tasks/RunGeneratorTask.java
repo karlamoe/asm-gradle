@@ -1,5 +1,6 @@
 package moe.karla.asm.gradle.tasks;
 
+import lombok.val;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.internal.file.FileOperations;
@@ -27,7 +28,7 @@ public abstract class RunGeneratorTask extends JavaExec {
         setGroup("asm");
 
         getArgumentProviders().add(() -> {
-            var result = new ArrayList<String>();
+            val result = new ArrayList<String>();
             result.add(getGeneratedClassSourceDirectory().get().getAsFile().getAbsolutePath());
             result.add(getGeneratedClassOutputDirectory().get().getAsFile().getAbsolutePath());
 

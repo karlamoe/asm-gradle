@@ -3,5 +3,7 @@ asm = '9.9.1'
 
 [libraries]
 
+lombok = 'org.projectlombok:lombok:1.18.42'
+
 asm = { group = 'org.ow2.asm', name = 'asm', version.ref = 'asm' }
 asm-util = { group = 'org.ow2.asm', name = 'asm-util', version.ref = 'asm' }

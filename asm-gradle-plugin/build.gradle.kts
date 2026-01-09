@@ -7,6 +7,11 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+}
+
 gradlePlugin {
     plugins {
         create("asmGradle") {
@@ -17,8 +22,9 @@ gradlePlugin {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
 }
 
 tasks.processResources {

@@ -1,5 +1,6 @@
 package moe.karla.asm.gradle;
 
+import lombok.val;
 import moe.karla.asm.gradle.internal.AsmProperties;
 import moe.karla.asm.gradle.tasks.RunGeneratorTask;
 import org.gradle.api.Plugin;
@@ -17,7 +18,7 @@ import java.util.ArrayList;
 public class AsmGradlePlugin implements Plugin<Project> {
     @Override
     public void apply(Project target) {
-        var ext = target.getExtensions().create("asm", AsmExtension.class);
+        val ext = target.getExtensions().create("asm", AsmExtension.class);
         ext.getGeneratedClassOutputDirectory().convention(
                 target.getLayout().getBuildDirectory().dir("generated/asm/classes")
         );
@@ -31,15 +32,15 @@ public class AsmGradlePlugin implements Plugin<Project> {
     }
 
     private boolean isInSync(Project project) {
-        var prop = project.getProviders().systemProperty("idea.sync.active");
+        val prop = project.getProviders().systemProperty("idea.sync.active");
         return prop.isPresent() && "true".equals(prop.get());
     }
 
     private void setupWithJava(Project project, AsmExtension extension) {
-        var java = project.getExtensions().getByType(JavaPluginExtension.class);
-        var sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
+        val java = project.getExtensions().getByType(JavaPluginExtension.class);
+        val sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
 
-        var asmDependencies = project.getConfigurations().register("asm", conf -> {
+        val asmDependencies = project.getConfigurations().register("asm", conf -> {
             conf.setCanBeConsumed(false);
             conf.setCanBeResolved(false);
 
@@ -49,7 +50,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
         });
 
 
-        var srcAsm = sourceSets.register("asm", asm -> {
+        val srcAsm = sourceSets.register("asm", asm -> {
             // TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE
 
             asm.getResources().setSrcDirs(new ArrayList<>());
@@ -69,7 +70,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
 
         // java.disableAutoTargetJvm();
 
-        var asmRuntime = project.getConfigurations().register("asmRuntime", conf -> {
+        val asmRuntime = project.getConfigurations().register("asmRuntime", conf -> {
             conf.setCanBeConsumed(false);
             conf.getAttributes().attribute(
                     Usage.USAGE_ATTRIBUTE,
@@ -88,11 +89,11 @@ public class AsmGradlePlugin implements Plugin<Project> {
         });
 
 
-        var runAsmGenerator = project.getTasks().register("runAsmGenerator", RunGeneratorTask.class);
+        val runAsmGenerator = project.getTasks().register("runAsmGenerator", RunGeneratorTask.class);
         runAsmGenerator.configure(task -> {
             task.getGeneratedClassOutputDirectory().set(extension.getGeneratedClassOutputDirectory());
             task.getGeneratedClassSourceDirectory().set(extension.getGeneratedClassSourceDirectory());
-            var classpath = project.getObjects().fileCollection();
+            val classpath = project.getObjects().fileCollection();
             task.setClasspath(classpath);
 
             classpath.from(asmRuntime);
@@ -122,7 +123,7 @@ public class AsmGradlePlugin implements Plugin<Project> {
 
         sourceSets.named("main").configure(main -> {
             main.compiledBy(runAsmGenerator);
-            var extraClasspath = project.getObjects().fileCollection();
+            val extraClasspath = project.getObjects().fileCollection();
 
             extraClasspath.from(runAsmGenerator.map(RunGeneratorTask::getGeneratedClassOutputDirectory));
             extraClasspath.builtBy(runAsmGenerator);
