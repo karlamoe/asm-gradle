@@ -172,6 +172,8 @@ public class DummyClassPrinter extends Printer {
 
         if ((access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) == 0) {
             text.add("{ throw new AbstractMethodError(\"This is a generated class and not compiled from a source file.\"); }");
+        } else {
+            text.add(";");
         }
         text.add("\n");
 
