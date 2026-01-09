@@ -1,5 +1,6 @@
 plugins {
     java
+    `asm-publishing`
 }
 
 dependencies {

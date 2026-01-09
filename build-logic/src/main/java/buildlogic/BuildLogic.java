@@ -47,6 +47,8 @@ public abstract class BuildLogic implements Plugin<Settings> {
                     conf.extendsFrom(junit.get());
                 });
             });
+
+            project.getPluginManager().apply(PublishingSetupPlugin.class);
         });
     }
 }

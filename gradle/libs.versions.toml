@@ -1,5 +1,6 @@
 [versions]
 asm = '9.9.1'
+maven-publish = '1.3.1'
 
 [libraries]
 
@@ -7,3 +8,9 @@ lombok = 'org.projectlombok:lombok:1.18.42'
 
 asm = { group = 'org.ow2.asm', name = 'asm', version.ref = 'asm' }
 asm-util = { group = 'org.ow2.asm', name = 'asm-util', version.ref = 'asm' }
+
+[plugins]
+maven-publish = { id = 'moe.karla.maven-publishing', version.ref = 'maven-publish' }
+gpg-signing = { id = 'moe.karla.signing-setup', version.ref = 'maven-publish' }
+
+

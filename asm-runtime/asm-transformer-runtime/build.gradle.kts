@@ -1,6 +1,7 @@
 plugins {
     java
     `java-library`
+    `asm-publishing`
 }
 
 dependencies {
