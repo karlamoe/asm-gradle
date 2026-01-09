@@ -6,12 +6,17 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 
 public abstract class RunGeneratorTask extends JavaExec {
+    @OutputDirectory
+    @Optional
+    public abstract DirectoryProperty getGeneratedProtoOutputDirectory();
+
     @InputFiles
     public abstract ConfigurableFileCollection getGeneratorClasspath();
 
@@ -32,6 +37,13 @@ public abstract class RunGeneratorTask extends JavaExec {
             result.add(getGeneratedClassSourceDirectory().get().getAsFile().getAbsolutePath());
             result.add(getGeneratedClassOutputDirectory().get().getAsFile().getAbsolutePath());
 
+            val dir = getGeneratedProtoOutputDirectory().getOrNull();
+            if (dir == null) {
+                result.add("");
+            } else {
+                result.add(dir.getAsFile().getAbsolutePath());
+            }
+
             getGeneratorClasspath().getAsFileTree().forEach(f -> result.add(f.getAbsolutePath()));
             return result;
         });
@@ -41,6 +53,9 @@ public abstract class RunGeneratorTask extends JavaExec {
         doFirst($ -> {
             getFileOperations().delete(getGeneratedClassOutputDirectory());
             getFileOperations().delete(getGeneratedClassSourceDirectory());
+            if (getGeneratedProtoOutputDirectory().isPresent()) {
+                getFileOperations().delete(getGeneratedProtoOutputDirectory());
+            }
         });
     }
 }

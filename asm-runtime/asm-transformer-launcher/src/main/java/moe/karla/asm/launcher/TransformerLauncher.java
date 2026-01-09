@@ -32,12 +32,16 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TransformerLauncher extends GeneratorContext {
     private final Path outputSources;
     private final Path outputClasses;
+    private final Path outputProto;
+
+
     private final ExecutorService executorService;
     private final AtomicLong taskCounter = new AtomicLong();
 
-    public TransformerLauncher(Path outputSources, Path outputClasses) {
+    public TransformerLauncher(Path outputSources, Path outputClasses, Path outputProto) {
         this.outputSources = outputSources;
         this.outputClasses = outputClasses;
+        this.outputProto = outputProto;
         this.executorService = Executors.newScheduledThreadPool(
                 4,
                 new ThreadFactory() {
@@ -57,6 +61,8 @@ public class TransformerLauncher extends GeneratorContext {
         var args = new ArrayList<>(Arrays.asList(args00));
         var outputSource = Paths.get(args.remove(0));
         var outputClasses = Paths.get(args.remove(0));
+        var outputProto0 = args.remove(0);
+
 
 //        System.out.println("outputSource: " + outputSource);
 //        System.out.println("outputClasses: " + outputClasses);
@@ -65,15 +71,22 @@ public class TransformerLauncher extends GeneratorContext {
         Files.createDirectories(outputClasses);
         Files.createDirectories(outputSource);
 
-        var launcher = new TransformerLauncher(outputSource, outputClasses);
+        var launcher = new TransformerLauncher(outputSource, outputClasses, outputProto0.isEmpty() ? null : Paths.get(outputProto0));
 
 
         for (var file : args) {
-            var reader = new ClassReader(Files.readAllBytes(Paths.get(file)));
+            if (file.endsWith(".class")) {
+                var reader = new ClassReader(Files.readAllBytes(Paths.get(file)));
 
-            launcher.executeThrowing(() -> {
-                launcher.runGenerator(reader.getClassName());
-            });
+                launcher.executeThrowing(() -> {
+                    launcher.runGenerator(reader.getClassName());
+                });
+            }
+            if (file.endsWith(".jproto")) {
+                launcher.executeThrowing(file, () -> {
+                    new ProtoParser(file).generate(launcher);
+                });
+            }
         }
         launcher.runKiller();
     }
@@ -133,7 +146,6 @@ public class TransformerLauncher extends GeneratorContext {
     public void addClass(ThrowingConsumer<ClassVisitor> consumer) throws Throwable {
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        StringWriter sw = new StringWriter();
         ClassInfoVisitor cv = new ClassInfoVisitor(Opcodes.ASM9, writer);
 
         consumer.accept(cv);
@@ -152,13 +164,25 @@ public class TransformerLauncher extends GeneratorContext {
         byte[] code = writer.toByteArray();
 
         Files.write(outputClass, code);
+        {
+            var sw = new StringWriter();
+            new ClassReader(code).accept(new TraceClassVisitor(
+                    null,
+                    new DummyClassPrinter(),
+                    new PrintWriter(sw)
+            ), 0);
+            Files.write(outputSource, sw.toString().getBytes(StandardCharsets.UTF_8));
+        }
 
-        new ClassReader(code).accept(new TraceClassVisitor(
-                null,
-                new DummyClassPrinter(),
-                new PrintWriter(sw)
-        ), 0);
-        Files.write(outputSource, sw.toString().getBytes(StandardCharsets.UTF_8));
+        if (this.outputProto != null) {
+            var outputProto = this.outputProto.resolve(cv.name + ".jproto");
+            Files.createDirectories(outputProto.getParent());
+
+            var sw = new StringBuilder();
+            new ClassReader(code).accept(new ProtoVisitor(sw), ClassReader.SKIP_CODE);
+            Files.write(outputProto, sw.toString().getBytes(StandardCharsets.UTF_8));
+        }
+
     }
 
 

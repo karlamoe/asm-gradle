@@ -51,9 +51,6 @@ public class AsmGradlePlugin implements Plugin<Project> {
 
 
         val srcAsm = sourceSets.register("asm", asm -> {
-            // TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE
-
-            asm.getResources().setSrcDirs(new ArrayList<>());
             project.getConfigurations().named(asm.getCompileClasspathConfigurationName()).configure(cc -> {
                 cc.getAttributes().attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, Integer.MAX_VALUE);
                 cc.extendsFrom(asmDependencies.get());
@@ -93,6 +90,8 @@ public class AsmGradlePlugin implements Plugin<Project> {
         runAsmGenerator.configure(task -> {
             task.getGeneratedClassOutputDirectory().set(extension.getGeneratedClassOutputDirectory());
             task.getGeneratedClassSourceDirectory().set(extension.getGeneratedClassSourceDirectory());
+            task.getGeneratedProtoOutputDirectory().set(extension.getGeneratedProtoOutputDirectory());
+
             val classpath = project.getObjects().fileCollection();
             task.setClasspath(classpath);
 

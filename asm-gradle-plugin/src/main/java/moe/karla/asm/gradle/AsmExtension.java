@@ -10,6 +10,8 @@ public abstract class AsmExtension {
 
     public abstract DirectoryProperty getGeneratedClassOutputDirectory();
 
+    public abstract DirectoryProperty getGeneratedProtoOutputDirectory();
+
 
     public abstract Property<Action<JavaToolchainSpec>> getJavaToolchain();
 
