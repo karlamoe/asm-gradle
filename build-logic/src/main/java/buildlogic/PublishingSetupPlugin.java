@@ -21,6 +21,7 @@ public class PublishingSetupPlugin implements Plugin<Project> {
             ext.url = "https://github.com/karlamoe/asm-gradle";
             ext.developer("Karlatemp", "i@karla.moe");
 
+            ext.license("MIT License", "https://github.com/karlamoe/asm-gradle/blob/main/LICENSE");
         }
     }
 

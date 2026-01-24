@@ -1,0 +1,3 @@
+[submodule "vendors/AccessTransformers"]
+	path = vendors/AccessTransformers
+	url = https://github.com/neoforged/AccessTransformers.git
