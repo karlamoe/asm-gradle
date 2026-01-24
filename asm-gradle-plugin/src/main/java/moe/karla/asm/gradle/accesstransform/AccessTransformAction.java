@@ -4,7 +4,7 @@ import lombok.SneakyThrows;
 import lombok.val;
 import lombok.var;
 import moe.karla.asm.gradle.internal.IOUtil;
-import moe.karla.asm.libs.accesstransformer.api.AccessTransformerEngine;
+import moe.karla.asm.gradle.libs.accesstransformer.api.AccessTransformerEngine;
 import org.gradle.api.artifacts.transform.*;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileSystemLocation;

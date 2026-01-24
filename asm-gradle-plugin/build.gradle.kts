@@ -56,7 +56,7 @@ val expandVendorSources = tasks.register<ProcessResources>("expandVendorSources"
     from(vendors.resolve("AccessTransformers/src/main/java"))
 
     val relocate = listOf(
-        "net.neoforged.accesstransformer" to "moe.karla.asm.libs.accesstransformer"
+        "net.neoforged.accesstransformer" to "moe.karla.asm.gradle.libs.accesstransformer"
     )
 
     eachFile {
